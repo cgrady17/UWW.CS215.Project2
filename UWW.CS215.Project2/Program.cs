@@ -10,12 +10,25 @@ namespace UWW.CS215.Project2
     {
         static void Main(string[] args)
         {
-            const long p = 11;
-            const long q = 13;
+            Random rndm = new Random();
+
+            long p = rndm.NextLong(int.MaxValue, long.MaxValue); //11;
+            long q = rndm.NextLong(int.MaxValue, long.MaxValue); //13;
 
             long n = p * q;
 
             long phi = CalculatePhi(p, q);
+
+            Output(p, q, n, phi);
+        }
+
+        private static void Output(long p, long q, long n, long phi)
+        {
+            Console.WriteLine("p = " + p);
+            Console.WriteLine("q = " + q);
+            Console.WriteLine("n = " + n);
+            Console.WriteLine("phi = " + phi);
+            Console.ReadLine();
         }
 
         private static long CalculatePhi(long p, long q)
