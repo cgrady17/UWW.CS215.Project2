@@ -1,20 +1,28 @@
 ﻿using System;
 using System.Numerics;
+using System.Security.Cryptography;
 
 namespace UWW.CS215.Project2
 {
     internal class Program
     {
-        private static readonly BigInteger MaxValue = 300;
+        private static readonly BigInteger MaxValue = 10000;
 
         private static void Main(string[] args)
         {
-            Random rndm = new Random();
             Console.WriteLine("Max Value: " + MaxValue);
             Console.WriteLine("Calculating p and q...");
-            BigInteger p = 11; //RandomIntegerBelow(rndm, MaxValue);
+            BigInteger p = RandomIntegerBelow(MaxValue); //419; //RandomIntegerBelow(rndm, MaxValue);
+            while (!IsProbablyPrime(p, 20))
+            {
+                p = RandomIntegerBelow(MaxValue);
+            }
             Console.WriteLine("p = " + p);
-            BigInteger q = 13; //RandomIntegerBelow(rndm, MaxValue);
+            BigInteger q = RandomIntegerBelow(MaxValue);//541; //RandomIntegerBelow(rndm, MaxValue);
+            while (!IsProbablyPrime(q, 20))
+            {
+                q = RandomIntegerBelow(MaxValue);
+            }
             Console.WriteLine("q = " + q);
 
             Console.WriteLine("Calculating n...");
@@ -34,32 +42,23 @@ namespace UWW.CS215.Project2
             Console.WriteLine("d = " + d);
 
             string publicKey = "(" + e + "," + n + ")";
+            Console.WriteLine("Public Key: " + publicKey);
             string privateKey = "(" + d + "," + n + ")";
+            Console.WriteLine("Private Key: " + privateKey);
 
             BigInteger m = 4;
             BigInteger c = 4;
+            Console.WriteLine("m = " + m);
+            Console.WriteLine("c = " + c);
 
             Console.WriteLine("Encrypting...");
             BigInteger encryptedM = Encrypt(m, e, n);
+            Console.WriteLine("Encrypted m = " + encryptedM);
 
             Console.WriteLine("Decrypting...");
             BigInteger decryptedM = Decrpyt(encryptedM, d, n);
+            Console.WriteLine("Decrypted m = " + decryptedM);
 
-            Output(p, q, n, phi, e, d, m, c, encryptedM, decryptedM);
-        }
-
-        private static void Output(BigInteger p, BigInteger q, BigInteger n, BigInteger phi, BigInteger e, BigInteger d, BigInteger m, BigInteger c, BigInteger encryptedM, BigInteger decryptedM)
-        {
-            Console.WriteLine("p = " + p);
-            Console.WriteLine("q = " + q);
-            Console.WriteLine("n = " + n);
-            Console.WriteLine("phi = " + phi);
-            Console.WriteLine("e = " + e);
-            Console.WriteLine("d = " + d);
-            Console.WriteLine("m = " + m);
-            Console.WriteLine("c = " + c);
-            Console.WriteLine("encrypted m = " + encryptedM);
-            Console.WriteLine("decrypted m = " + decryptedM);
             Console.WriteLine("Does decrypted m (" + decryptedM + ") match original m (" + m + ")? " + (m == decryptedM ? "Yes" : "No") + "!");
             Console.ReadLine();
         }
@@ -124,11 +123,11 @@ namespace UWW.CS215.Project2
         private static BigInteger CalculateD(BigInteger e, BigInteger phi)
         {
             Random rndm = new Random();
-            BigInteger d = RandomIntegerBelow(rndm, MaxValue);
+            BigInteger d = RandomIntegerBelow(rndm, MaxValue * 10);
 
             while ((d * e) % phi != 1)
             {
-                d = RandomIntegerBelow(rndm, MaxValue);
+                d = RandomIntegerBelow(rndm, MaxValue * 10);
             }
             return d;
         }
@@ -156,6 +155,84 @@ namespace UWW.CS215.Project2
             } while (r >= n);
 
             return r;
+        }
+
+        public static bool IsProbablyPrime(BigInteger n, int k)
+        {
+            bool result = false;
+            if (n < 2)
+                return false;
+            if (n == 2)
+                return true;
+            // return false if n is even -> divisbla by 2
+            if (n % 2 == 0)
+                return false;
+            //writing n-1 as 2^s.d
+            BigInteger d = n - 1;
+            BigInteger s = 0;
+            while (d % 2 == 0)
+            {
+                d >>= 1;
+                s = s + 1;
+            }
+            for (int i = 0; i < k; i++)
+            {
+                BigInteger a;
+                do
+                {
+                    a = RandomIntegerBelow(n - 2);
+                }
+                while (a < 2 || a >= n - 2);
+
+                if (BigInteger.ModPow(a, d, n) == 1) return true;
+                for (int j = 0; j < s - 1; j++)
+                {
+                    if (BigInteger.ModPow(a, 2 * j * d, n) == n - 1)
+                        return true;
+                }
+                result = false;
+            }
+            return result;
+        }
+
+        public static BigInteger RandomIntegerBelow(int n)
+        {
+            var rng = new RNGCryptoServiceProvider();
+            byte[] bytes = new byte[n / 8];
+
+            rng.GetBytes(bytes);
+
+            var msb = bytes[n / 8 - 1];
+            var mask = 0;
+            while (mask < msb)
+                mask = (mask << 1) + 1;
+
+            bytes[n - 1] &= Convert.ToByte(mask);
+            BigInteger p = new BigInteger(bytes);
+            return p;
+        }
+
+        public static BigInteger RandomIntegerBelow(BigInteger bound)
+        {
+            var rng = new RNGCryptoServiceProvider();
+            //Get a byte buffer capable of holding any value below the bound
+            var buffer = (bound << 16).ToByteArray(); // << 16 adds two bytes, which decrease the chance of a retry later on
+
+            //Compute where the last partial fragment starts, in order to retry if we end up in it
+            var generatedValueBound = BigInteger.One << (buffer.Length * 8 - 1); //-1 accounts for the sign bit
+            var validityBound = generatedValueBound - generatedValueBound % bound;
+
+            while (true)
+            {
+                //generate a uniformly random value in [0, 2^(buffer.Length * 8 - 1))
+                rng.GetBytes(buffer);
+                buffer[buffer.Length - 1] &= 0x7F; //force sign bit to positive
+                var r = new BigInteger(buffer);
+
+                //return unless in the partial fragment
+                if (r >= validityBound) continue;
+                return r % bound;
+            }
         }
     }
 }
