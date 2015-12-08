@@ -1,49 +1,54 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Numerics;
 
 namespace UWW.CS215.Project2
 {
     internal class Program
     {
+        private static readonly BigInteger MaxValue = 300;
+
         private static void Main(string[] args)
         {
             Random rndm = new Random();
-
+            Console.WriteLine("Max Value: " + MaxValue);
             Console.WriteLine("Calculating p and q...");
-            long p = rndm.NextLong(int.MaxValue, long.MaxValue); //11;
-            long q = rndm.NextLong(int.MaxValue, long.MaxValue); //13;
+            BigInteger p = 11; //RandomIntegerBelow(rndm, MaxValue);
+            Console.WriteLine("p = " + p);
+            BigInteger q = 13; //RandomIntegerBelow(rndm, MaxValue);
+            Console.WriteLine("q = " + q);
 
             Console.WriteLine("Calculating n...");
-            long n = p * q;
+            BigInteger n = p * q;
+            Console.WriteLine("n = " + n);
 
             Console.WriteLine("Calculating phi...");
-            long phi = CalculatePhi(p, q);
+            BigInteger phi = CalculatePhi(p, q);
+            Console.WriteLine("phi = " + phi);
 
             Console.WriteLine("Calculating e (coprime)...");
-            long e = SelectCoPrime(phi);
+            BigInteger e = SelectCoPrime(phi);
+            Console.WriteLine("e = " + e);
 
             Console.WriteLine("Calculating d...");
-            long d = CalculateD(e, phi);
+            BigInteger d = CalculateD(e, phi);
+            Console.WriteLine("d = " + d);
 
             string publicKey = "(" + e + "," + n + ")";
             string privateKey = "(" + d + "," + n + ")";
 
-            long m = 4;
-            long c = 4;
+            BigInteger m = 4;
+            BigInteger c = 4;
 
             Console.WriteLine("Encrypting...");
-            long encryptedM = Encrypt(m, e, n);
+            BigInteger encryptedM = Encrypt(m, e, n);
 
             Console.WriteLine("Decrypting...");
-            long decryptedM = Decrpyt(encryptedM, d, n);
+            BigInteger decryptedM = Decrpyt(encryptedM, d, n);
 
             Output(p, q, n, phi, e, d, m, c, encryptedM, decryptedM);
         }
 
-        private static void Output(long p, long q, long n, long phi, long e, long d, long m, long c, long encryptedM, long decryptedM)
+        private static void Output(BigInteger p, BigInteger q, BigInteger n, BigInteger phi, BigInteger e, BigInteger d, BigInteger m, BigInteger c, BigInteger encryptedM, BigInteger decryptedM)
         {
             Console.WriteLine("p = " + p);
             Console.WriteLine("q = " + q);
@@ -55,6 +60,7 @@ namespace UWW.CS215.Project2
             Console.WriteLine("c = " + c);
             Console.WriteLine("encrypted m = " + encryptedM);
             Console.WriteLine("decrypted m = " + decryptedM);
+            Console.WriteLine("Does decrypted m (" + decryptedM + ") match original m (" + m + ")? " + (m == decryptedM ? "Yes" : "No") + "!");
             Console.ReadLine();
         }
 
@@ -64,9 +70,9 @@ namespace UWW.CS215.Project2
         /// <param name="p">Value of p.</param>
         /// <param name="q">Value of q.</param>
         /// <returns>Phi of n.</returns>
-        private static long CalculatePhi(long p, long q)
+        private static BigInteger CalculatePhi(BigInteger p, BigInteger q)
         {
-            return ((p-1) * (q-1));
+            return ((p - 1) * (q - 1));
         }
 
         /// <summary>
@@ -74,14 +80,14 @@ namespace UWW.CS215.Project2
         /// </summary>
         /// <param name="phi">The value of the phi of n.</param>
         /// <returns>Random value.</returns>
-        private static long SelectCoPrime(long phi)
+        private static BigInteger SelectCoPrime(BigInteger phi)
         {
             Random rndm = new Random();
-            long e = rndm.NextLong(1, phi);
+            BigInteger e = RandomIntegerBelow(rndm, phi);
 
             while (GetGcdByModulus(e, phi) != 1)
             {
-                e = rndm.NextLong(1, phi);
+                e = RandomIntegerBelow(rndm, phi);
             }
 
             return e;
@@ -93,7 +99,7 @@ namespace UWW.CS215.Project2
         /// <param name="value1">The first value.</param>
         /// <param name="value2">The second value.</param>
         /// <returns>The value of the two value's greatest common denominator.</returns>
-        private static long GetGcdByModulus(long value1, long value2)
+        private static BigInteger GetGcdByModulus(BigInteger value1, BigInteger value2)
         {
             while (value1 != 0 && value2 != 0)
             {
@@ -106,30 +112,50 @@ namespace UWW.CS215.Project2
                     value2 %= value1;
                 }
             }
-            return Math.Max(value1, value2);
+            return BigInteger.Max(value1, value2);
         }
 
-        private static long CalculateD(long e, long phi)
+        /// <summary>
+        /// Calculates a value d, such that (d * e) % phi(n) = 1.
+        /// </summary>
+        /// <param name="e"></param>
+        /// <param name="phi"></param>
+        /// <returns></returns>
+        private static BigInteger CalculateD(BigInteger e, BigInteger phi)
         {
             Random rndm = new Random();
-            long d = rndm.NextLong(int.MaxValue, long.MaxValue);
+            BigInteger d = RandomIntegerBelow(rndm, MaxValue);
 
-            while (d*e%phi != 1)
+            while ((d * e) % phi != 1)
             {
-                d = rndm.NextLong(int.MaxValue, long.MaxValue);
+                d = RandomIntegerBelow(rndm, MaxValue);
             }
-
             return d;
         }
 
-        private static long Encrypt(long m, long e, long n)
+        private static BigInteger Encrypt(BigInteger m, BigInteger e, BigInteger n)
         {
-            return m ^ e%n;
+            return BigInteger.ModPow(m, e, n);
         }
 
-        private static long Decrpyt(long c, long d, long n)
+        private static BigInteger Decrpyt(BigInteger c, BigInteger d, BigInteger n)
         {
-            return c ^ d%n;
+            return BigInteger.ModPow(c, d, n);
+        }
+
+        private static BigInteger RandomIntegerBelow(Random random, BigInteger n)
+        {
+            byte[] bytes = n.ToByteArray();
+            BigInteger r;
+
+            do
+            {
+                random.NextBytes(bytes);
+                bytes[bytes.Length - 1] &= 0x7F; //force sign bit to positive
+                r = new BigInteger(bytes);
+            } while (r >= n);
+
+            return r;
         }
     }
 }
