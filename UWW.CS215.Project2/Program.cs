@@ -12,13 +12,13 @@ namespace UWW.CS215.Project2
         {
             Console.WriteLine("Max Value: " + MaxValue);
             Console.WriteLine("Calculating p and q...");
-            BigInteger p = RandomIntegerBelow(MaxValue); //419; //RandomIntegerBelow(rndm, MaxValue);
+            BigInteger p = RandomIntegerBelow(MaxValue);
             while (!IsProbablyPrime(p, 20))
             {
                 p = RandomIntegerBelow(MaxValue);
             }
             Console.WriteLine("p = " + p);
-            BigInteger q = RandomIntegerBelow(MaxValue);//541; //RandomIntegerBelow(rndm, MaxValue);
+            BigInteger q = RandomIntegerBelow(MaxValue);
             while (!IsProbablyPrime(q, 20))
             {
                 q = RandomIntegerBelow(MaxValue);
@@ -122,12 +122,12 @@ namespace UWW.CS215.Project2
         /// <returns></returns>
         private static BigInteger CalculateD(BigInteger e, BigInteger phi)
         {
-            Random rndm = new Random();
-            BigInteger d = RandomIntegerBelow(rndm, MaxValue * 10);
+            Random random = new Random();
+            BigInteger d = RandomIntegerBelow(random, MaxValue * 10);
 
             while ((d * e) % phi != 1)
             {
-                d = RandomIntegerBelow(rndm, MaxValue * 10);
+                d = RandomIntegerBelow(random, MaxValue * 10);
             }
             return d;
         }
@@ -164,7 +164,7 @@ namespace UWW.CS215.Project2
                 return false;
             if (n == 2)
                 return true;
-            // return false if n is even -> divisbla by 2
+            // return false if n is even -> divisible by 2
             if (n % 2 == 0)
                 return false;
             //writing n-1 as 2^s.d
